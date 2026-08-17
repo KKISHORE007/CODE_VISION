@@ -1,25 +1,25 @@
 /**
- * Mock AI Service to simulate LLM responses for Phase 2.
- * In a real application, this would call the Gemini API.
+ * Mock AI Service to simulate LLM responses for Phase 4.
  */
 
 export const mockAIService = {
-  /**
-   * Fetches an explanation for a specific line of code.
-   */
   async getLineExplanation(lineNumber: number, language: string): Promise<string> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        let text = "This line is part of the Counter component.";
+        let text = "This line is part of the Counter component's structure.";
         
-        if (lineNumber === 4 || lineNumber === 5) {
+        if (lineNumber === 5) {
           text = "This sets up a state variable named 'count' with an initial value of 0, and a function 'setCount' to update it.";
-        } else if (lineNumber === 7 || lineNumber === 8 || lineNumber === 9) {
+        } else if (lineNumber >= 8 && lineNumber <= 10) {
           text = "This is a handler function that increments the 'count' state by 1 whenever it is called.";
-        } else if (lineNumber === 14) {
+        } else if (lineNumber >= 12 && lineNumber <= 32) {
+          text = "This is a useEffect hook that sets up an event listener. It listens for 'HIGHLIGHT_LINE' messages from the parent window and applies a CSS highlight to the corresponding DOM element.";
+        } else if (lineNumber >= 37 && lineNumber <= 43) {
           text = "This renders a button element. When clicked, it triggers the 'handleIncrement' function.";
-        } else if (lineNumber === 13) {
+        } else if (lineNumber === 36) {
           text = "This renders the current value of the 'count' state inside an H2 heading tag.";
+        } else if (lineNumber === 35) {
+          text = "This is the main container div for the application.";
         }
 
         if (language !== 'English') {
@@ -27,24 +27,21 @@ export const mockAIService = {
         }
 
         resolve(text);
-      }, 800); // Simulate network delay
+      }, 500); // Simulate network delay
     });
   },
 
-  /**
-   * Fetches a whole-project summary.
-   */
   async getProjectSummary(language: string): Promise<string> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        let text = "The CodeVision mock project currently consists of a simple React Counter application. It demonstrates basic state management using the `useState` hook and event handling with a button click. The component structure is straightforward, focusing on updating the DOM efficiently when the state changes.";
+        let text = "The CodeVision mock project currently consists of a React Counter application integrated with a Runtime Highlighting system. It demonstrates basic state management using the `useState` hook, and uses a `useEffect` hook to listen for window messages to visually highlight DOM elements corresponding to code lines.";
         
         if (language !== 'English') {
            text = `[Translated to ${language}]: ${text}`;
         }
         
         resolve(text);
-      }, 1500); // Simulate network delay
+      }, 1000); 
     });
   }
 };

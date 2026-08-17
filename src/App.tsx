@@ -7,8 +7,8 @@ import { ProjectSummaryPanel } from './components/summary/ProjectSummaryPanel';
 import { LivePreviewPanel } from './components/preview/LivePreviewPanel';
 import { useAIExplanation } from './hooks/useAIExplanation';
 
-// Sample mock code for testing
-const mockCode = `import React, { useState } from 'react';
+// Sample mock code annotated with data-line attributes and runtime listener
+const mockCode = `import React, { useState, useEffect } from 'react';
 
 export default function App() {
   // Initialize counter state to 0
@@ -19,12 +19,44 @@ export default function App() {
     setCount(count + 1);
   };
 
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.data?.type === 'HIGHLIGHT_LINE') {
+        const line = event.data.line;
+        
+        // Remove old highlights
+        document.querySelectorAll('.runtime-highlight').forEach(el => {
+          el.classList.remove('runtime-highlight');
+          el.style.boxShadow = '';
+          el.style.transition = '';
+        });
+
+        // Add new highlight
+        const el = document.querySelector(\`[data-line="\${line}"]\`);
+        if (el) {
+          el.classList.add('runtime-highlight');
+          el.style.transition = 'all 0.3s ease-in-out';
+          el.style.boxShadow = '0 0 0 4px rgba(234, 179, 8, 0.6)';
+          
+          // Remove highlight after 2 seconds
+          setTimeout(() => {
+            el.style.boxShadow = '';
+            el.classList.remove('runtime-highlight');
+          }, 2000);
+        }
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   return (
-    <div style={{ fontFamily: 'sans-serif', textAlign: 'center', padding: '2rem' }}>
-      <h2>Current Count: {count}</h2>
+    <div data-line="35" style={{ fontFamily: 'sans-serif', textAlign: 'center', padding: '2rem' }}>
+      <h2 data-line="36">Current Count: {count}</h2>
       <button 
+        data-line="37"
         onClick={handleIncrement}
-        style={{ padding: '0.5rem 1rem', fontSize: '1rem', cursor: 'pointer', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px' }}
+        style={{ padding: '0.5rem 1rem', fontSize: '1rem', cursor: 'pointer', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', marginTop: '1rem' }}
       >
         Increment
       </button>
@@ -51,6 +83,12 @@ function CodeVisionApp() {
     
     setSelectedLine(lineNumber);
     fetchLineExplanation(lineNumber, selectedLanguage);
+
+    // Broadcast highlight message to Sandpack iframe
+    const iframes = document.getElementsByTagName('iframe');
+    for (let i = 0; i < iframes.length; i++) {
+      iframes[i].contentWindow?.postMessage({ type: 'HIGHLIGHT_LINE', line: lineNumber }, '*');
+    }
   };
 
   const handleLanguageChange = (language: string) => {
