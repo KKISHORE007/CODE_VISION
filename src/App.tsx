@@ -72,9 +72,10 @@ function CodeVisionApp() {
   const { 
     explanation, 
     isLoading, 
+    usingMock,
     fetchLineExplanation, 
     clearExplanation 
-  } = useAIExplanation();
+  } = useAIExplanation(mockCode);
 
   const handleLineClick = (lineNumber: number) => {
     if (viewMode === 'summary') {
@@ -140,10 +141,15 @@ function CodeVisionApp() {
                 explanation={explanation}
                 isLoading={isLoading}
                 selectedLanguage={selectedLanguage}
+                usingMock={usingMock}
               />
             ) : (
               <ProjectSummaryPanel 
                 selectedLanguage={selectedLanguage}
+                usingMock={usingMock}
+                summary={summary}
+                isLoading={isLoading}
+                fetchProjectSummary={fetchProjectSummary}
               />
             )}
           </div>

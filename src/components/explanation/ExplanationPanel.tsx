@@ -5,21 +5,30 @@ interface ExplanationPanelProps {
   explanation: string | null;
   isLoading: boolean;
   selectedLanguage: string;
+  usingMock: boolean;
 }
 
 export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
   selectedLine,
   explanation,
   isLoading,
-  selectedLanguage
+  selectedLanguage,
+  usingMock
 }) => {
   return (
     <section className="h-full flex flex-col bg-gray-50">
-      <div className="px-4 py-2 bg-white border-b border-gray-200 text-sm font-medium text-gray-700 shadow-sm flex items-center">
-        <svg className="w-4 h-4 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-        </svg>
-        AI Explanation
+      <div className="px-4 py-2 bg-white border-b border-gray-200 text-sm font-medium text-gray-700 shadow-sm flex items-center justify-between">
+        <div className="flex items-center">
+          <svg className="w-4 h-4 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          AI Explanation
+        </div>
+        {usingMock ? (
+          <span className="text-[10px] uppercase font-bold px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded border border-yellow-200">Mock LLM</span>
+        ) : (
+          <span className="text-[10px] uppercase font-bold px-2 py-0.5 bg-green-100 text-green-700 rounded border border-green-200">Gemini AI</span>
+        )}
       </div>
       <div className="flex-1 p-8 overflow-y-auto">
         {selectedLine === null ? (
@@ -59,11 +68,11 @@ export const ExplanationPanel: React.FC<ExplanationPanelProps> = ({
               </div>
             ) : (
               <div>
-                <p className="text-gray-700 text-lg leading-relaxed">
+                <p className="text-gray-700 text-lg leading-relaxed whitespace-pre-wrap">
                   {explanation}
                 </p>
                 
-                {selectedLanguage !== 'English' && (
+                {selectedLanguage !== 'English' && usingMock && (
                   <div className="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-100">
                     <p className="text-sm text-amber-800 italic">
                       * This explanation is translated to {selectedLanguage} by the AI backend.
