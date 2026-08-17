@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
+import { SandpackProvider } from '@codesandbox/sandpack-react';
 import { Header } from './components/layout/Header';
 import { CodeEditorPanel } from './components/editor/CodeEditorPanel';
 import { ExplanationPanel } from './components/explanation/ExplanationPanel';
 import { ProjectSummaryPanel } from './components/summary/ProjectSummaryPanel';
+import { LivePreviewPanel } from './components/preview/LivePreviewPanel';
 import { useAIExplanation } from './hooks/useAIExplanation';
 
 // Sample mock code for testing
 const mockCode = `import React, { useState } from 'react';
 
-function Counter() {
+export default function App() {
   // Initialize counter state to 0
   const [count, setCount] = useState(0);
 
@@ -18,18 +20,19 @@ function Counter() {
   };
 
   return (
-    <div className="counter-app">
+    <div style={{ fontFamily: 'sans-serif', textAlign: 'center', padding: '2rem' }}>
       <h2>Current Count: {count}</h2>
-      <button onClick={handleIncrement}>
+      <button 
+        onClick={handleIncrement}
+        style={{ padding: '0.5rem 1rem', fontSize: '1rem', cursor: 'pointer', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px' }}
+      >
         Increment
       </button>
     </div>
   );
-}
+}`;
 
-export default Counter;`;
-
-function App() {
+function CodeVisionApp() {
   const [selectedLanguage, setSelectedLanguage] = useState('English');
   const [viewMode, setViewMode] = useState<'line' | 'summary'>('line');
   const [selectedLine, setSelectedLine] = useState<number | null>(null);
@@ -42,7 +45,6 @@ function App() {
   } = useAIExplanation();
 
   const handleLineClick = (lineNumber: number) => {
-    // If we are in summary mode, switch to line explainer automatically when a line is clicked
     if (viewMode === 'summary') {
       setViewMode('line');
     }
@@ -54,7 +56,6 @@ function App() {
   const handleLanguageChange = (language: string) => {
     setSelectedLanguage(language);
     
-    // If a line is already selected and we change the language, we should refetch it
     if (selectedLine !== null && viewMode === 'line') {
       fetchLineExplanation(selectedLine, language);
     }
@@ -80,32 +81,50 @@ function App() {
       {/* Main Content: Split Screen */}
       <main className="flex-1 flex overflow-hidden">
         {/* Left Panel: Code Editor */}
-        <div className="w-1/2 overflow-hidden">
+        <div className="w-1/2 overflow-hidden h-full">
           <CodeEditorPanel 
             code={mockCode} 
-            filename="Counter.tsx" 
+            filename="App.js" 
             onLineClick={handleLineClick} 
           />
         </div>
 
-        {/* Right Panel: Explanations or Summary */}
-        <div className="w-1/2 overflow-hidden bg-gray-50 border-l border-gray-200">
-          {viewMode === 'line' ? (
-            <ExplanationPanel 
-              selectedLine={selectedLine}
-              explanation={explanation}
-              isLoading={isLoading}
-              selectedLanguage={selectedLanguage}
-            />
-          ) : (
-            <ProjectSummaryPanel 
-              selectedLanguage={selectedLanguage}
-            />
-          )}
+        {/* Right Panel: Split into Top (Preview) and Bottom (Explanation/Summary) */}
+        <div className="w-1/2 flex flex-col border-l border-gray-200">
+          <div className="h-1/2 overflow-hidden bg-white">
+            <LivePreviewPanel />
+          </div>
+          
+          <div className="h-1/2 overflow-hidden bg-gray-50 border-t border-gray-200">
+            {viewMode === 'line' ? (
+              <ExplanationPanel 
+                selectedLine={selectedLine}
+                explanation={explanation}
+                isLoading={isLoading}
+                selectedLanguage={selectedLanguage}
+              />
+            ) : (
+              <ProjectSummaryPanel 
+                selectedLanguage={selectedLanguage}
+              />
+            )}
+          </div>
         </div>
       </main>
     </div>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <SandpackProvider 
+      template="react" 
+      theme="light"
+      files={{
+        "/App.js": mockCode
+      }}
+    >
+      <CodeVisionApp />
+    </SandpackProvider>
+  );
+}
