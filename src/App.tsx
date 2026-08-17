@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SandpackProvider } from '@codesandbox/sandpack-react';
 import { Header } from './components/layout/Header';
 import { CodeEditorPanel } from './components/editor/CodeEditorPanel';
@@ -7,8 +7,7 @@ import { ProjectSummaryPanel } from './components/summary/ProjectSummaryPanel';
 import { LivePreviewPanel } from './components/preview/LivePreviewPanel';
 import { useAIExplanation } from './hooks/useAIExplanation';
 
-// Sample mock code annotated with data-line attributes and runtime listener
-const mockCode = `import React, { useState, useEffect } from 'react';
+const defaultCode = `import React, { useState, useEffect } from 'react';
 
 export default function App() {
   // Initialize counter state to 0
@@ -38,7 +37,6 @@ export default function App() {
           el.style.transition = 'all 0.3s ease-in-out';
           el.style.boxShadow = '0 0 0 4px rgba(234, 179, 8, 0.6)';
           
-          // Remove highlight after 2 seconds
           setTimeout(() => {
             el.style.boxShadow = '';
             el.classList.remove('runtime-highlight');
@@ -64,20 +62,47 @@ export default function App() {
   );
 }`;
 
-function CodeVisionApp() {
+// Sequence of line numbers to auto-play through
+const WALKTHROUGH_STEPS = [5, 8, 12, 35, 36, 37];
+
+function CodeVisionApp({ code, setCode }: { code: string, setCode: (c: string) => void }) {
   const [selectedLanguage, setSelectedLanguage] = useState('English');
   const [viewMode, setViewMode] = useState<'line' | 'summary'>('line');
   const [selectedLine, setSelectedLine] = useState<number | null>(null);
+  
+  const [isPlaying, setIsPlaying] = useState(false);
+  const currentStepIndex = useRef(0);
+  const playTimer = useRef<any>(null);
   
   const { 
     explanation, 
     isLoading, 
     usingMock,
-    fetchLineExplanation, 
+    fetchLineExplanation,
+    fetchProjectSummary,
+    summary,
     clearExplanation 
-  } = useAIExplanation(mockCode);
+  } = useAIExplanation(code);
 
-  const handleLineClick = (lineNumber: number) => {
+  // URL Parsing on Mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlCode = params.get('c');
+    const urlLang = params.get('l');
+    
+    if (urlCode) {
+      try {
+        setCode(atob(urlCode));
+      } catch (e) {
+        console.error("Failed to decode code from URL");
+      }
+    }
+    if (urlLang) {
+      setSelectedLanguage(urlLang);
+    }
+  }, [setCode]);
+
+  const triggerLineClick = (lineNumber: number) => {
     if (viewMode === 'summary') {
       setViewMode('line');
     }
@@ -85,11 +110,17 @@ function CodeVisionApp() {
     setSelectedLine(lineNumber);
     fetchLineExplanation(lineNumber, selectedLanguage);
 
-    // Broadcast highlight message to Sandpack iframe
     const iframes = document.getElementsByTagName('iframe');
     for (let i = 0; i < iframes.length; i++) {
       iframes[i].contentWindow?.postMessage({ type: 'HIGHLIGHT_LINE', line: lineNumber }, '*');
     }
+  };
+
+  const handleLineClick = (lineNumber: number) => {
+    if (isPlaying) {
+      setIsPlaying(false);
+    }
+    triggerLineClick(lineNumber);
   };
 
   const handleLanguageChange = (language: string) => {
@@ -108,6 +139,42 @@ function CodeVisionApp() {
     }
   };
 
+  const handleShare = () => {
+    const encodedCode = btoa(code);
+    const url = new URL(window.location.href);
+    url.searchParams.set('c', encodedCode);
+    url.searchParams.set('l', selectedLanguage);
+    navigator.clipboard.writeText(url.toString());
+  };
+
+  const togglePlay = () => {
+    setIsPlaying(!isPlaying);
+  };
+
+  // Auto-play loop logic
+  useEffect(() => {
+    if (isPlaying) {
+      // Trigger the current step immediately
+      const step = WALKTHROUGH_STEPS[currentStepIndex.current];
+      triggerLineClick(step);
+      
+      // Move to next step after 4 seconds
+      playTimer.current = setInterval(() => {
+        currentStepIndex.current = (currentStepIndex.current + 1) % WALKTHROUGH_STEPS.length;
+        triggerLineClick(WALKTHROUGH_STEPS[currentStepIndex.current]);
+      }, 4000);
+      
+    } else {
+      if (playTimer.current) {
+        clearInterval(playTimer.current);
+      }
+    }
+    
+    return () => {
+      if (playTimer.current) clearInterval(playTimer.current);
+    };
+  }, [isPlaying, selectedLanguage]);
+
   return (
     <div className="flex flex-col h-screen bg-gray-50 text-gray-900">
       <Header 
@@ -115,6 +182,9 @@ function CodeVisionApp() {
         onLanguageChange={handleLanguageChange}
         viewMode={viewMode}
         onViewModeChange={handleViewModeChange}
+        isPlaying={isPlaying}
+        onTogglePlay={togglePlay}
+        onShare={handleShare}
       />
 
       {/* Main Content: Split Screen */}
@@ -122,9 +192,10 @@ function CodeVisionApp() {
         {/* Left Panel: Code Editor */}
         <div className="w-1/2 overflow-hidden h-full">
           <CodeEditorPanel 
-            code={mockCode} 
+            code={code} 
             filename="App.js" 
             onLineClick={handleLineClick} 
+            onChange={(val) => val && setCode(val)}
           />
         </div>
 
@@ -160,15 +231,17 @@ function CodeVisionApp() {
 }
 
 export default function App() {
+  const [code, setCode] = useState(defaultCode);
+
   return (
     <SandpackProvider 
       template="react" 
       theme="light"
       files={{
-        "/App.js": mockCode
+        "/App.js": code
       }}
     >
-      <CodeVisionApp />
+      <CodeVisionApp code={code} setCode={setCode} />
     </SandpackProvider>
   );
 }

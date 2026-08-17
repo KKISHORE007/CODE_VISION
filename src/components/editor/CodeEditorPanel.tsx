@@ -5,12 +5,14 @@ interface CodeEditorPanelProps {
   code: string;
   filename?: string;
   onLineClick: (lineNumber: number) => void;
+  onChange?: (value: string | undefined) => void;
 }
 
 export const CodeEditorPanel: React.FC<CodeEditorPanelProps> = ({ 
   code, 
   filename = "Untitled",
-  onLineClick 
+  onLineClick,
+  onChange
 }) => {
   const editorRef = useRef<any>(null);
   const monaco = useMonaco();
@@ -36,8 +38,8 @@ export const CodeEditorPanel: React.FC<CodeEditorPanelProps> = ({
            </svg>
            {filename}
         </span>
-        <span className="text-xs px-2 py-1 bg-gray-200 text-gray-600 rounded-md uppercase tracking-wider font-semibold">
-          Read-only
+        <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-md uppercase tracking-wider font-semibold border border-green-200">
+          Editable
         </span>
       </div>
       <div className="flex-1 overflow-hidden">
@@ -46,9 +48,10 @@ export const CodeEditorPanel: React.FC<CodeEditorPanelProps> = ({
           defaultLanguage="typescript"
           theme="vs-light"
           value={code}
+          onChange={onChange}
           onMount={handleEditorDidMount}
           options={{
-            readOnly: true,
+            readOnly: false,
             minimap: { enabled: false },
             fontSize: 14,
             lineHeight: 24,
